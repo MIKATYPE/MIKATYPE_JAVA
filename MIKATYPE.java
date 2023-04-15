@@ -1,6 +1,7 @@
 /* ************************************************************************** */
-/* 美佳のタイプトレーナー JAVA版ソースコード Ver2.06.01                       */
-/*                               Copy right 今村二朗 2021/7/10                */
+/* 美佳のタイプトレーナー JAVA版ソースコード Ver2.06.01   2021/7/10           */
+/*                                           Ver2.06.02   2023/3/12           */
+/*                                           Copy right 今村二朗              */
 /*                                                                            */
 /* このソースコードは 改変、転載、他ソフトの使用など自由にお使いください      */
 /*                                                                            */
@@ -195,6 +196,8 @@ public class MIKATYPE extends JFrame {
 	char MIKA_key_char2=0; /* ひらがなローマ字別表記の練習文字 */
 	int MIKA_r_count=0; /* ひらがな一文字内のローマ字表記文字カウンター */
 	double MIKA_random_scale=1.0; /* ランダム練習 英単語練習 ローマ字練習の文字表示倍率 */
+	double MIKA_romaji_scale=2.0; /* ローマ字練習のローマ字表記の文字表示倍率 */ /* 2023/2/25追加 */
+	double MIKA_romaji_bk_scale=1.4; /* ローマ字練習のローマ字表記の背景の四角表示倍率 */ /* 2023/2/25追加 */
 	int MIKA_max_x_flag=0;/* 画面表示 縦行数モード =0 25行 =1 20行 */
 	int MIKA_max_y_flag=0;/* 画面表示 横文半角カラム数モード =0 80カラム =1 64カラム */
 	int MIKA_width_x=16; /* 全角文字 半角文字 縦方向ドット数 */
@@ -3644,15 +3647,19 @@ void cslmencenter(Graphics g,int x,String mes) /* 中央にメッセージ文字
 			{
 				if(k>=MIKA_cline_c) break; /* 練習文字数まで表示 */
 				a=MIKA_chat_t[j][i]; /* 練習文字を取得 */
+				jj=xxcord(j); /* 練習文字の縦位置を仮想座標に変換 */ /* 2023/2/25 追加 */
+				ii=yycord(i); /* 練習文字の横位置を仮想座標に変換 */ /* 2023/2/25 追加 */
 				if(MIKA_err_char_flag==1&&j==MIKA_c_p2&&i==MIKA_c_p1) /* 練習文字がエラー文字の場合 */
 				{
 					cslcolor(g,Color.red); /* 表示色を赤に設定 */
-					dispbkchar(g,j,i); /* 文字の背景を赤色で表示 */
+//					dispbkchar(g,j,i); /* 文字の背景を赤色で表示 */ /* 2023/2/25 旧コード */
+					dispbkchar(g,jj,ii,MIKA_random_scale); /* 文字の背景を赤色で表示 */ /* 2023/2/25 新コード */
 				}
 				cslcolor(g,Color.black); /* 表示色を黒に設定 */
-				jj=xxcord(j); /* 練習文字の縦位置を仮想座標に変換 */
-				ii=yycord(i); /* 練習文字の横位置を仮想座標に変換 */
-				cslputzscale(g,jj,ii,a,1.0); /* 指定の位置に文字を表示 */
+//				jj=xxcord(j); /* 練習文字の縦位置を仮想座標に変換 */ /* 2023/2/25 削除 */
+//				ii=yycord(i); /* 練習文字の横位置を仮想座標に変換 */ /* 2023/2/25 削除 */
+//				cslputzscale(g,jj,ii,a,1.0); /* 指定の位置に文字を表示 */ /* 2023/2/25 旧コード */
+				cslputzscale(g,jj,ii,a,MIKA_random_scale); /* 指定の位置に文字を表示 */ /* 2023/2/25 新コード */
 				if(j<MIKA_c_p2||(j==MIKA_c_p2&&i<MIKA_c_p1)) /* 入力済の文字には下線を引く */
 				{
 					cslputu(g,jj,ii,"aa",1,MIKA_color_text_under_line);	
@@ -3818,7 +3825,7 @@ void cslmencenter(Graphics g,int x,String mes) /* 中央にメッセージ文字
 		cslcolor(g,MIKA_blue); /* 表示色を青に設定 */
 		cslmencenter(g,5*16+8,"美佳のタイプトレーナー");
 		cslcolor(g,MIKA_cyan); /* 表示色をシアンに設定 */
-		cslmencenter(g,7*16+8,"ＭＩＫＡＴＹＰＥ Ｖer２.０６.０１");
+		cslmencenter(g,7*16+8,"ＭＩＫＡＴＹＰＥ Ｖer２.０６.０２");
 		cslcolor(g,MIKA_orange); /* 表示色をオレンジに設定 */
 		cslmencenter(g,9*16+6,"＜＜より高速なタイピングのために＞＞");
 		cslmencenter(g,11*16+4,"めざせ一分間２００文字入力");
@@ -4401,7 +4408,8 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 				if(MIKA_time_start_flag!=0) /* 最初の正解を入力済の場合 */
 				{
 					MIKA_type_end_time=System.currentTimeMillis(); /* 練習終了時間をミリ秒で取得 */
-					MIKA_type_speed_time=(MIKA_type_end_time-MIKA_type_start_time)/1000.0;/* 練習経過時間 秒を計算 */
+//					MIKA_type_speed_time=(MIKA_type_end_time-MIKA_type_start_time)/1000.0;/* 練習経過時間 秒を計算 */ /* 2023/2/24修正 旧コード */
+					MIKA_type_speed_time=roundtime((MIKA_type_end_time-MIKA_type_start_time)/1000.0);/* 練習経過時間 秒を計算 */ /* 2023/2/24修正 新コード */
 					MIKA_p_time=MIKA_p_time+(long)MIKA_type_speed_time; /* 累積練習時間の記録を加算 */
 				}
 				procpabort(g); /* 指表示消去 エスケープで終了しますの表示消去 リトライメッセージ表示 */
@@ -4455,8 +4463,18 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 				if(MIKA_type_count>=MIKA_position_limit) /* 60文字入力した場合は練習を終了 */
 				{
 					MIKA_type_end_time=System.currentTimeMillis(); /* 練習終了時間をミリ秒で取得取得 */
-					MIKA_type_speed_time=(MIKA_type_end_time-MIKA_type_start_time)/1000.0; /* 練習経過時間を計算 */
+//					MIKA_type_speed_time=(MIKA_type_end_time-MIKA_type_start_time)/1000.0; /* 練習経過時間を計算 */ /* 2023/2/24修正 旧コード */
+					MIKA_type_speed_time=roundtime((MIKA_type_end_time-MIKA_type_start_time)/1000.0); /* 練習経過時間を計算 */ /* 2023/2/24修正 新コード */
 					MIKA_p_time=MIKA_p_time+(long)MIKA_type_speed_time; /* 累積練習時間の記録を加算 */
+					if(MIKA_menu_kind_flag==MIKA_key_guide_off) /* キーガイド表示がオフの場合 */ /* 2023/2/24追加 */
+					{
+						dikposit(g,MIKA_err_char,2); /* エラー文字表示をキーの刻印なしで消去 */ /* 2023/2/24追加 */
+					}
+					else /* 2023/2/24追加 */
+					{
+						dikposit(g,MIKA_err_char,1); /* エラー文字表示をキーの刻印ありで消去 */ /* 2023/2/24追加 */
+					}
+					MIKA_err_char=0;  /* エラー文字にゼロを指定 */ /* 2023/2/24追加 */			
 					procpabort(g); /* 指表示消去 エスケープで終了しますの表示消去 リトライメッセージ表示 */
 					MIKA_practice_end_flag=1; /* 練習実行中フラグを終了にセット */
 					MIKA_type_end_flag=1; /* 練習終了フラグを60文字入力による終了にセット */
@@ -4501,12 +4519,26 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 			}
 		}
 	}
-	void dispbkchar(Graphics g,int i,int j) /* ランダム練習 英単語練習 ローマ字練習で練習文字の背景を表示 */
+//	void dispbkchar(Graphics g,int i,int j) /* ランダム練習 英単語練習 ローマ字練習で練習文字の背景を表示 */ /*2023/2/25旧コード */
+	void dispbkchar(Graphics g,int i,int j,double scale) /* ランダム練習 英単語練習 ローマ字練習で練習文字の背景を表示 */ /* 2023/2/25 新コード */
 	{
-		int ii,jj;
-		ii=xxcord(i); /* 練習文字の縦位置を仮想座標に変換 */
-		jj=yycord(j); /* 練習文字の横位置を仮想座標に変換 */
-		cslputzscale(g,ii,jj,'■',1.4); /* 四角文字を倍率1.4倍で表示 */
+//		int ii,jj; /* 2023/2/25 削除 */
+//		ii=xxcord(i); /* 練習文字の縦位置を実座標に変換 */ /* 2023/2/25 削除 */
+//		jj=yycord(j); /* 練習文字の横位置を実座標に変換 */ /* 2023/2/25 削除 */
+//		cslputzscale(g,ii,jj,'■',1.4); /* 四角文字を倍率1.4倍で表示 */ /* 2023/2/25 削除*/
+// 2023/2/25 追加開始 
+		int xx,yy;
+		int xx1,xx2,yy1,yy2;
+		int font_size;
+		font_size=cslfontsize(scale); /* 文字フォントサイズ取得 */
+		xx1=xcord(i);	/* 左上 x 座標を 仮想座標から実座標に変換 */ 
+		xx2=xcord(i+16);	/* 右下 x 座標を 仮想座標から実座標に変換 */
+		xx=(xx2+xx1-font_size)/2; /* 四角表示 左上 x 座標取得 */
+		yy1=ycord(j);	/* 左上 y 座標を 仮想座標から実座標に変換 */
+		yy2=ycord(j+16);	 /* 右下 y 座標を 仮想座標から実座標に変換 */
+		yy=(yy2+yy1-font_size)/2; /* 四角表示 左上 y座標取得 */
+		g.fillRect(yy,xx,font_size,font_size);	/*四角を描画 */
+// 2023/2/25 追加終了
 	}
 	void dispchar(Graphics g,int i,int j,char a) /* ランダム練習 英単語練習 ローマ字練習で練習文字を表示 */
 	{
@@ -4519,6 +4551,7 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 // flag=1 赤色背景で表示
 // flag=0 背景白色で表示
 	{
+		int ii,jj;
 		Color color1,color2;
 		if(flag==1) /* エラー文字を背景赤色で表示する場合 */
 		{
@@ -4531,9 +4564,13 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 			color2=Color.black; /* 文字色を黒色に指定 */
 		}
 		cslcolor(g,color1); /* 背景色の設定 */
-		dispbkchar(g,MIKA_c_p2,MIKA_c_p1);	/* 四角い文字を背景に表示 */
+		ii=xxcord(MIKA_c_p2); /* 練習文字の縦位置を実座標に変換 */ /* 2023/2/25 追加 */
+		jj=yycord(MIKA_c_p1); /* 練習文字の横位置を実座標に変換 */ /* 2023/2/25 追加 */
+//		dispbkchar(g,MIKA_c_p2,MIKA_c_p1);	/* 四角い文字を背景に表示 */ /* 2023/2/25 旧コード */
+		dispbkchar(g,ii,jj,MIKA_random_scale);	/* 四角い文字を背景に表示 */ /* 2023/2/25 新コード */
 		cslcolor(g,color2); /* 文字色の設定 */
-		dispchar(g,MIKA_c_p2,MIKA_c_p1,MIKA_chat_t[MIKA_c_p2][MIKA_c_p1]); /* 練習文字を表示 */
+//		dispchar(g,MIKA_c_p2,MIKA_c_p1,MIKA_chat_t[MIKA_c_p2][MIKA_c_p1]); /* 練習文字を表示 */ /* 2023/2/25 旧コード */
+		cslputzscale(g,ii,jj,MIKA_chat_t[MIKA_c_p2][MIKA_c_p1],MIKA_random_scale); /* 練習文字を表示 */ /* 2023/2/25 新コード */
 	}
 	void dispspeedrate(Graphics g,int flag) /* ランダム練習 英単語練習 入力速度表示 */
 // flag=0 表示 flag=1 消去
@@ -4659,7 +4696,8 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 				cslcolor(g,MIKA_color_romaji_err);	
 				else /* エラー表示の復帰を行う場合は背景色で表示 */
 				cslcolor(g,MIKA_bk_color);
-				cslputscale(g,ii,38*8+8,"■",2.0); /* 四角い文字を2.0倍の倍率で表示 */
+//				cslputscale(g,ii,38*8+8,"■",2.0); /* 四角い文字を2.0倍の倍率で表示 */ /* 2023/2/25 旧コード */
+				dispbkchar(g,ii,38*8+8,MIKA_romaji_bk_scale); /* 文字の背景を赤色で表示 */ /* 2023/2/25 新コード */
 	 	 		return;
 			}
 			else /* 表示の消去を行う場合 */
@@ -4675,9 +4713,10 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 			{
 				if(MIKA_err_char_flag==1&&i==MIKA_r_count) cslcolor(g,MIKA_color_romaji_err); /* エラー文字は背景を赤色表示 */
 				else cslcolor(g,MIKA_bk_color); /* エラー文字でない時は背景色で表示 */
-				cslputscale(g,ii,38*8+8+i*32,"■",2.0); /* 四角い文字を2.0倍の倍率で表示 */
+//				cslputscale(g,ii,38*8+8+i*32,"■",2.0); /* 四角い文字を2.0倍の倍率で表示 */ /* 2023/2/25 旧コード */
+				dispbkchar(g,ii,38*8+8+i*32,MIKA_romaji_bk_scale); /* 文字の背景を赤色で表示 */ /* 2023/2/25 新コード */
 				cslcolor(g,MIKA_color_romaji); /* ローマ字表示の色指定 */
-				cslputzscale(g,ii,38*8+8+i*32,a.charAt(i),2.0); /* ローマ字表記のi番目の文字を2.0倍の倍率で表示 */
+				cslputzscale(g,ii,38*8+8+i*32,a.charAt(i),MIKA_romaji_scale); /* ローマ字表記のi番目の文字を2.0倍の倍率で表示 */
 				if(i<MIKA_r_count) cslputu(g,ii+4,38*8+i*32,"aaaa",1,MIKA_color_romaji_under_line); /* 入力済みの文字にはアンダーラインを表示 */
 			}
 		}
@@ -4686,7 +4725,7 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 			cslcolor(g,MIKA_bk_color); /* 表示色を背景色に設定 */
 			for(i=0;i<a_length;i++)
 			{
-				cslputzscale(g,ii,38*8+8+i*32,a.charAt(i),2.0); /* ローマ字表示を消去 */
+				cslputzscale(g,ii,38*8+8+i*32,a.charAt(i),MIKA_romaji_scale); /* ローマ字表示を消去 */
 			}
 			for(i=0;i<a_length;i++)
 			{
@@ -5319,7 +5358,9 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 			x_pos=MIKA_pasciix[a-0x41]; /* アルファベット位置テーブルよりx位置取得 */
 			y_pos=MIKA_pasciiy[a-0x41]; /* アルファベット位置テーブルよりy位置取得 */
 		}
-		if(0x61<=a&&a<=0x7a) /* アルファベット小文字の場合 */
+// ポジション練習で刻印の文字が大文字の時にガイドキー表示とエラーキー表示が正常に作動しないバグを修正 */
+//		if(0x61<=a&&a<=0x7a) /* アルファベット小文字の場合 */ /* 2023/2/24修正 旧コード */
+		else if(0x61<=a&&a<=0x7a) /* アルファベット小文字の場合 */ /* 2023/2/24修正 新コード */
 		{
 			x_pos=MIKA_pasciix[a-0x61]; /* アルファベット位置テーブルよりx位置取得 */
 			y_pos=MIKA_pasciiy[a-0x61];/* アルファベット位置テーブルよりy位置取得 */
