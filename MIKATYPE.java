@@ -1,6 +1,7 @@
 /* ************************************************************************** */
 /* 美佳のタイプトレーナー JAVA版ソースコード Ver2.06.01   2021/7/10           */
 /*                                           Ver2.06.02   2023/3/12           */
+/*                                           Ver2.06.03   2023/6/10           */
 /*                                           Copy right 今村二朗              */
 /*                                                                            */
 /* このソースコードは 改変、転載、他ソフトの使用など自由にお使いください      */
@@ -47,8 +48,10 @@ import java.io.UnsupportedEncodingException;
 import java.io.IOException;
 import java.awt.Toolkit;
 import java.awt.Image;
+import java.util.concurrent.Semaphore;
 public class MIKATYPE extends JFrame {
 
+	Semaphore MIKA_semaphore=new Semaphore(1); /* セマフォー獲得 */
 	String MIKA_file_name_seiseki="mikatype.sei"; /* 成績ファイル名 読み込み用 */
 	String MIKA_file_name_seiseki2="mikatype.sei"; /* 成績ファイル名 書き込み用 */
 	String MIKA_file_name_kiroku="mikatype.log"; /* 練習時間記録ファイル名 追記用 */
@@ -64,7 +67,7 @@ public class MIKATYPE extends JFrame {
 	String MIKA_type_date; /* 最高速度達成日 一時保存エリア MIKA_type_kiroku_dateの年月日のみを保存 */
 	long MIKA_st_t; /*  練習時間記録ファイル用練習開始時間ミリ秒 */
 	long MIKA_lt_t; /*  練習時間記録ファイル用練習終了時間ミリ秒 */
-	long 	MIKA_rt_t=0; /* 成績記録ファイル用合計練習時間  秒 */
+	long 	MIKA_rt_t=0; /* 成績ファイル用合計練習時間  秒 */
 	String[] MIKA_seiseki={null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null}; /* 成績データ読み込みデータ列 */
 	String[]	MIKA_r_date= /* ランダム練習 最高速度達成日付 */
 	{
@@ -2735,7 +2738,15 @@ String[] MIKA_kana_yomi2={
 	    addWindowListener(new WindowAdapter() { /* ウィンドーがクローズされた時の処理 を追加 */
             public synchronized void windowClosing(WindowEvent ev) {
 //				System.out.printf("window closed\n");
-				savekiroku(); /* 練習記録(累積練習時間 最高入力速度 達成日)を保存する */
+				try { /* 2023/6/5 追加 */
+					MIKA_semaphore.acquire(); /* セマフォー要求 */ /* 2023/6/5 追加 */									
+					savekiroku(); /* 練習記録(累積練習時間 最高入力速度 達成日)を保存する */
+					MIKA_semaphore.release(); /* セマフォー解放 */ /* 2023/6/5 追加 */
+				}						
+				catch(InterruptedException e)
+				{	 /* 2023/6/5 追加 */
+					e.printStackTrace(); /* 2023/6/5 追加 */
+				}
 				procexit(); /* 成績ファイル書き込み 練習時間記録ファイル書き込み */
 				System.exit(0); /* プログラム終了 */
             }
@@ -3694,7 +3705,7 @@ void cslmencenter(Graphics g,int x,String mes) /* 中央にメッセージ文字
 		}
 		if (MIKA_type_speed_time!=0.0) /* 経過秒がゼロでない場合 */
 		{
-			disptime(g,0); /* 経過秒表示 */
+				disptime(g,0); /* 経過秒表示 */
 		}
 		if (MIKA_type_err_count!=0) /* エラー回数がゼロで無い場合 */
 		{
@@ -3825,7 +3836,7 @@ void cslmencenter(Graphics g,int x,String mes) /* 中央にメッセージ文字
 		cslcolor(g,MIKA_blue); /* 表示色を青に設定 */
 		cslmencenter(g,5*16+8,"美佳のタイプトレーナー");
 		cslcolor(g,MIKA_cyan); /* 表示色をシアンに設定 */
-		cslmencenter(g,7*16+8,"ＭＩＫＡＴＹＰＥ Ｖer２.０６.０２");
+		cslmencenter(g,7*16+8,"ＭＩＫＡＴＹＰＥ Ｖer２.０６.０３");
 		cslcolor(g,MIKA_orange); /* 表示色をオレンジに設定 */
 		cslmencenter(g,9*16+6,"＜＜より高速なタイピングのために＞＞");
 		cslmencenter(g,11*16+4,"めざせ一分間２００文字入力");
@@ -3957,17 +3968,41 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 			}
 			if(MIKA_exec_func_no>500&&MIKA_exec_func_no<600) /* ランダム練習 */
 			{
-				proctrain(g,nChar); /* ランダム練習 文字入力処理 */
+				try { /* 2023/6/5 追加 */
+					MIKA_semaphore.acquire(); /* セマフォー要求 */ /* 2023/6/5 追加 */
+					proctrain(g,nChar); /* ランダム練習 文字入力処理 */
+					MIKA_semaphore.release(); /* セマフォー解放 */ /* 2023/6/5 追加 */
+				}						
+				catch(InterruptedException e)
+				{	 /* 2023/6/5 追加 */
+					e.printStackTrace(); /* 2023/6/5 追加 */
+				}
 				return(1);
 			}
 			if(MIKA_exec_func_no>600&&MIKA_exec_func_no<700) /* 英単語練習 */
 			{
-				proctrain(g,nChar); /* 英単語演習 文字入力処理 */
+				try { /* 2023/6/5 追加 */
+					MIKA_semaphore.acquire(); /* セマフォー要求 */ /* 2023/6/5 追加 */
+					proctrain(g,nChar); /* 英単語演習 文字入力処理 */
+					MIKA_semaphore.release(); /* セマフォー解放 */ /* 2023/6/5 追加 */
+				}						
+				catch(InterruptedException e)
+				{	 /* 2023/6/5 追加 */
+					e.printStackTrace(); /* 2023/6/5 追加 */
+				}
 				return(1);
 			}
 			if(MIKA_exec_func_no>700&&MIKA_exec_func_no<800) /* ローマ字練習 */
 			{
-				procatrain(g,nChar); /* ローマ字練習 文字入力処理 */
+				try { /* 2023/6/5 追加 */
+					MIKA_semaphore.acquire(); /* セマフォー要求 */ /* 2023/6/5 追加 */
+					procatrain(g,nChar); /* ローマ字練習 文字入力処理 */
+					MIKA_semaphore.release(); /* セマフォー解放 */ /* 2023/6/5 追加 */
+				}						
+				catch(InterruptedException e)
+				{	 /* 2023/6/5 追加 */
+					e.printStackTrace(); /* 2023/6/5 追加 */
+				}
 				return(1);
 			}
 		}
@@ -4156,6 +4191,7 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 				MIKA_p_time=MIKA_p_time+timeinterval(MIKA_type_start_time,MIKA_type_end_time); /* 累積練習時間の記録
 を加算 */
 			}
+			if(MIKA_practice_end_flag==0) MIKA_practice_end_flag=1;/* 2023/6/5 追加 */
 		}
 		else if(500<MIKA_exec_func_no&&MIKA_exec_func_no<800) /* ランダム練習 英単語練習 ローマ字練習の場合 */
 		{
@@ -4171,8 +4207,10 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 				MIKA_type_speed_record[MIKA_type_kind_no]=MIKA_type_speed; /* 最高入力速度を保存 */
 				MIKA_type_date_record[MIKA_type_kind_no]=MIKA_type_date; /* 達成日を保存 */
 			}
+			if(MIKA_practice_end_flag==0) MIKA_practice_end_flag=1;/* 2023/6/5 追加 */
 		}
 	}
+
 	String 	mesfileerr() /* ファイル書き込みエラーメッセージ作成 */
 	{
 		String a,a1,a2,a3;
@@ -4495,6 +4533,11 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 				}
 				else
 				{
+					try { /* 2023/6/6 追加 */
+						Thread.sleep(20); /* 2023/6/6 追加 */
+					} catch(InterruptedException e) { /* 2023/6/6 追加 */
+						e.printStackTrace(); /* 2023/6/6 追加 */
+					}
 					procpnextchar(g); /* 次練習文字を取得して表示 */
 					if(MIKA_menu_kind_flag==MIKA_key_guide_off) /* キーガイド表示なしの場合 */
 					{
@@ -4952,13 +4995,13 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 				MIKA_type_err_count++; /* エラー入力文字数カウンターを加算 */
 				disperror1(g,0); /* 今回エラー回数を表示 */
 			}
-			if(MIKA_time_start_flag==1) /* 練習時間計測中の場合 */
-			{
-				if((roundtime(MIKA_type_speed_time)!=roundtime(MIKA_ttype_speed_time))&&MIKA_ttype_speed_time>=1.0) /* 練習時間が前回より一秒以上更新している場合は入力速度を更新 */
-				{
-					procdispspeed(g); /* 入力速度を表示 */
-				}
-			}
+//			if(MIKA_time_start_flag==1) /* 練習時間計測中の場合 */ /* 2023/6/5 削除 */
+//			{
+//				if((roundtime(MIKA_type_speed_time)!=roundtime(MIKA_ttype_speed_time))&&MIKA_ttype_speed_time>=1.0) /* 練習時間が前回より一秒以上更新している場合は入力速度を更新 */ /* 2023/6/5 削除 */
+//				{
+//					procdispspeed(g); /* 入力速度を表示 */ /* 2023/6/5 削除 */
+//				}
+//			}
 		}
 	}
 	char uppertolower(char nChar) /* 英大文字を英小文字に変換 */
@@ -5150,13 +5193,13 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 				disperrchar(g,1); /* エラー文字のひらがなを背景赤で表示 */
 				dispromaji(g,MIKA_romaji,0); /*   間違えたローマ字表記文字を背景赤で表示 */
 			}
-			if(MIKA_time_start_flag==1) /* 練習時間計測中の場合 */
-			{
-				if((roundtime(MIKA_type_speed_time)!=roundtime(MIKA_ttype_speed_time))&&MIKA_ttype_speed_time>=1.0) /* 練習時間が前回より一秒以上更新している場合は入力速度を更新 */
-				{
-					procdispspeed2(g); /* ローマ字入力速度を表示 */
-				}
-			}
+//			if(MIKA_time_start_flag==1) /* 練習時間計測中の場合 */ /* 2023/6/5 削除 */
+//			{
+//				if((roundtime(MIKA_type_speed_time)!=roundtime(MIKA_ttype_speed_time))&&MIKA_ttype_speed_time>=1.0) /* 練習時間が前回より一秒以上更新している場合は入力速度を更新 */ /* 2023/6/5 削除 */
+//				{
+//					procdispspeed2(g); /* ローマ字入力速度を表示 */ /* 2023/6/5 削除 */
+//				}
+//			}
 		}
 	}
 	void getromaji(int w_count) /* ひらがなのローマ字表記を取得 */
@@ -5402,11 +5445,18 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 	}
 	public synchronized void paint(Graphics g) {
 		// 画面を塗りつぶす
-		MIKA_win_size=getSize(); /* 表示画面サイズ取得 */
+		try { /* 2023/6/5 追加 */
+			MIKA_semaphore.acquire(); /* セマフォー要求 */ /* 2023/6/5 追加 */
+			MIKA_win_size=getSize(); /* 表示画面サイズ取得 */
 //		System.out.printf("win size width=%d height=%d\n",MIKA_win_size.width,MIKA_win_size.height);
-		MIKA_insets=getInsets(); /* 表示画面外枠サイズ取得 */
+			MIKA_insets=getInsets(); /* 表示画面外枠サイズ取得 */
 //		System.out.printf("Inset left=%d right=%d top=%d bottom=%d \n",MIKA_insets.left,MIKA_insets.right,MIKA_insets.top,MIKA_insets.bottom);
-		dispmen(g); /* 画面表示 */
+			dispmen(g); /* 画面表示 */
+			MIKA_semaphore.release(); /* セマフォー解放 */ /* 2023/6/5 追加 */
+		} catch(InterruptedException e) /* 2023/6/5 追加 */
+		{	
+			e.printStackTrace(); /* 2023/6/5 追加 */
+		}
 	}
 	private class MyKeyAdapter extends KeyAdapter {
 
@@ -5432,21 +5482,16 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 	{
 	    Graphics g;
 		public synchronized void run(){
+       		g = getGraphics();  /* Graphics 取得 */
 			if(MIKA_practice_end_flag==0) /* 練習実行中の場合 */
 			{
-				try {
-       				g = getGraphics();  /* Graphics 取得 */
-					MIKA_guide_char=MIKA_key_char; /* ガイドキー文字に練習文字を設定 */
-					dikposit(g,MIKA_guide_char,0); /* ガイドキー文字のキー位置を表示 */
-					difposit(g,MIKA_guide_char,0); /* ガイドキー文字の指位置を表示 */
-//				System.out.printf("Timer task\n");
-					cancel(); /* タイマーをキャンセル */
-	    	    	g.dispose(); /* Graphics 破棄 */
-				} catch(Exception ex)
-				{	
-					ex.printStackTrace();
-				}
+				MIKA_guide_char=MIKA_key_char; /* ガイドキー文字に練習文字を設定 */
+				dikposit(g,MIKA_guide_char,0); /* ガイドキー文字のキー位置を表示 */
+				difposit(g,MIKA_guide_char,0); /* ガイドキー文字の指位置を表示 */
 			}
+//				System.out.printf("Timer task\n");
+			cancel(); /* タイマーをキャンセル */
+	    	g.dispose(); /* Graphics 破棄 */
 		}
 	}
 	public class Procrtimer extends TimerTask /* ランダム練習 単語練習用タイマー */
@@ -5457,19 +5502,19 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 			sec_count++;
 			if(MIKA_practice_end_flag==0) /* 練習実行中の場合 */
 			{
-				try {
+       			g = getGraphics();  /* Graphics 取得 */
+				try { /* 2023/6/5 追加 */
+						MIKA_semaphore.acquire(); /* セマフォー要求 */ /* 2023/6/5 追加 */
 						if((MIKA_practice_end_flag==0)&&(sec_count>=MIKA_random_key_limit2)) /* 制限時間を超過した場合 */
 						{
 							MIKA_practice_end_flag=1; /* 練習実行中フラグを終了にセット */
 							cancel(); /* タイマーをキャンセル */
 							MIKA_ttype_speed_time=MIKA_random_key_limit2; /* 経過時間を制限時間に設定 */
 							MIKA_type_end_time=MIKA_type_start_time+(long)(MIKA_random_key_limit2*1000); /* 現在時刻を開始時間+制限時間に設定 */
-       						g = getGraphics();  /* Graphics 取得 */
 							procdispspeed(g); /* 練習速度表示 */
 							MIKA_type_time_record[MIKA_type_kind_no]=MIKA_type_time_record[MIKA_type_kind_no]+(long)MIKA_ttype_speed_time; /* 累積練習時間加算 */
 							prockiroku(g); /* 記録を更新時の処理 */
 							proctrainexit(g); /* 練習終了時の表示更新 */
-							g.dispose(); /* Graphics 破棄 */
 						}
 						else if(MIKA_practice_end_flag==0)
 						{
@@ -5477,16 +5522,16 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 							MIKA_ttype_speed_time=(MIKA_type_end_time-MIKA_type_start_time)/1000.0; /* 経過秒を実数で計算 */
 							if((MIKA_type_speed_time!=MIKA_ttype_speed_time)&&MIKA_ttype_speed_time>=1.0) 
 							{
-   	    						g = getGraphics();  /* Graphics 取得 */
 								procdispspeed(g); /* 入力速度を表示 */
-								g.dispose(); /* Graphics 破棄 */
 							}
 						}
+						MIKA_semaphore.release(); /* セマフォー解放 */ /* 2023/6/5 追加 */
 //				System.out.printf("Timer task\n");
-				} catch(Exception ex)
+				} catch(InterruptedException e) /* 2023/6/5 追加 */
 				{	
-					ex.printStackTrace();
+					e.printStackTrace(); /* 2023/6/5 追加 */
 				}
+				g.dispose(); /* Graphics 破棄 */
 			}
 		}
 	}
@@ -5498,7 +5543,9 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 		sec_count++;
 		if(MIKA_practice_end_flag==0) /* 練習実行中の場合 */
 			{
-				try {
+	     		g = getGraphics(); /* Graphics 取得 */
+				try { /* 2023/6/5 追加 */
+						MIKA_semaphore.acquire(); /* セマフォー要求 */ /* 2023/6/5 追加 */
 						if((MIKA_practice_end_flag==0)&&(sec_count>=MIKA_random_key_limit2)) /* 制限時間を超過した場合 */
 						{
 							MIKA_practice_end_flag=1; /* 練習実行中フラグを終了にセット */
@@ -5506,12 +5553,10 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 							MIKA_ttype_speed_time=MIKA_random_key_limit2;/* 経過時間を制限時間に設定 */
 							MIKA_type_end_time=MIKA_type_start_time+(long)(MIKA_random_key_limit2*1000); /* 現在時刻を開始時間+制限時間に設定 */
 //					System.out.printf("start time=%d end time =%d\n",MIKA_type_start_time,MIKA_type_end_time);
-		       				g = getGraphics(); /* Graphics 取得 */
 							procdispspeed2(g); /* ローマ字入力速度を表示 */
 							MIKA_type_time_record[MIKA_type_kind_no]=MIKA_type_time_record[MIKA_type_kind_no]+(long)MIKA_ttype_speed_time; /* 累積練習時間加算 */
 							prockiroku(g); /* 記録を更新時の処理 */
 							proctrainexit2(g); /* 練習終了時の表示更新 */
-							g.dispose(); /* Graphics 破棄 */
 						}
 						else if(MIKA_practice_end_flag==0)
 						{
@@ -5519,18 +5564,18 @@ int exec_func(Graphics g,char nChar) /* 一文字入力に対応した処理を�
 							MIKA_ttype_speed_time=(MIKA_type_end_time-MIKA_type_start_time)/1000.0; /* 経過秒を実数で計算 */
 							if((MIKA_type_speed_time!=MIKA_ttype_speed_time)&&MIKA_ttype_speed_time>=1.0)
 							{
-			  					g = getGraphics(); /* Graphics 取得 */
 								procdispspeed2(g); /* ローマ字入力速度を表示 */
-								g.dispose(); /* Graphics 破棄 */
 							}
 						}
+						MIKA_semaphore.release(); /* セマフォー解放 */
 					}
 //				System.out.printf("Timer task\n");
-				 	catch(Exception ex)
-					{	
-					ex.printStackTrace();
-					}
+				catch(InterruptedException e)
+				{	 /* 2023/6/5 追加 */
+					e.printStackTrace(); /* 2023/6/5 追加 */
 				}
+				g.dispose(); /* Graphics 破棄 */
+			}
 		}
 	}
 }
